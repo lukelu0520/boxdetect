@@ -79,7 +79,7 @@ def get_rect_kernels(
         width_range, height_range,
         wh_ratio_range=None,
         border_thickness=1,
-        tolerance=0.02):
+        tolerance=0.05):
     """
     Returns a list of rectangular kernels for OpenCV morphological transformations.
     It's using `width_range`, `height_range` params to create all the possible combinations of rectangular kernels and performs filtering based on `wh_ratio_range`.

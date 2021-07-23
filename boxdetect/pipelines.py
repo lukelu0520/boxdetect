@@ -4,6 +4,51 @@ import numpy as np
 
 from . import rect_proc, img_proc, config
 
+# ToDo(luke): need a better merge function to group boxes, (if a bigger box includes a smaller box,
+#  within a distance, they should be grouped as one single box)
+
+def get_checkboxes_using_rects(
+        img, cfg: config.PipelinesConfig,
+        px_threshold=0.1, plot=False, verbose=False):
+    """
+    The function modified original get_checkboxes, but using rects rather than grouping_rects    
+    """  # Luke at Chainhome
+    # st group_size_range to (1, 1) to focus on single box groups only (checkboxes) # NOQA E501
+    cfg.group_size_range = (1, 1)
+
+    # get the image from str or numpy.ndarray
+    img = img_proc.get_image(img)
+
+    # try converting to grayscale
+    try:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    except Exception:
+        pass
+        # print("WARNING: Failed to convert to grayscale... skipping")
+
+    # run get_boxes function
+    rects, grouping_rects, image, output_image = get_boxes(img, cfg=cfg, plot=plot)
+
+    # sets all the pixel values to either 0 or 255
+    # this function also inverts colors:
+    # - black pixels will become the background
+    # - white pixels will become the foreground
+    img = img_proc.apply_thresholding(img, plot)
+
+    # return an array of arrays containing a set of values for each checkbox:
+    # [checkbox_coords, contains_pixels, cropped_checkbox]
+    # - checkbox_coords - rectangle (x,y,width,height)
+    # - contains_pixels - bool, True/False
+    # - cropped_checkbox - numpy.ndarray of cropped checkbox image
+    return np.asarray([
+        [
+            rect,
+            img_proc.contains_pixels(
+                img_proc.get_checkbox_crop(
+                    img, rect), px_threshold, verbose=verbose),
+            img_proc.get_checkbox_crop(img, rect)
+        ]
+        for rect in rects], dtype=object)
 
 def get_checkboxes(
         img, cfg: config.PipelinesConfig,
